@@ -102,8 +102,20 @@ export const adminUpdateHomeBanner = (data: {
 export const adminGetOrders = (status?: string) =>
   api.get<any, any>('/admin/orders', { params: { status } });
 
-export const adminShipOrder = (id: number, status: 'paid' | 'shipped' | 'done') =>
-  api.post<any, any>(`/admin/orders/${id}/ship`, { status });
+export const adminShipOrder = (
+  id: number,
+  status: 'paid' | 'shipped' | 'done',
+  tracking_number?: string,
+  tracking_image?: File | null,
+) => {
+  const formData = new FormData();
+  formData.append('status', status);
+  if (tracking_number) formData.append('tracking_number', tracking_number);
+  if (tracking_image) formData.append('tracking_image', tracking_image);
+  return api.post<any, any>(`/admin/orders/${id}/ship`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
 
 export const adminGetStats = () =>
   api.get<any, any>('/admin/stats');

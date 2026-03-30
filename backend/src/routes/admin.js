@@ -265,8 +265,8 @@ router.get('/products', (req, res) => {
     }
 });
 
-// POST /api/v1/admin/orders/:id/ship - 标记发货
-router.post('/orders/:id/ship', (req, res) => {
+// POST /api/v1/admin/orders/:id/ship - 标记发货（支持填写物流单号或上传物流图片）
+router.post('/orders/:id/ship', upload.single('tracking_image'), (req, res) => {
     try {
         const db = getDB();
         const { id } = req.params;
@@ -276,8 +276,11 @@ router.post('/orders/:id/ship', (req, res) => {
             return res.status(400).json({ code: 400, message: '状态值无效', data: null });
         }
 
-        db.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-            .run(status, id);
+        const tracking_number = (req.body.tracking_number || '').trim().slice(0, 100);
+        const tracking_image = req.file ? `/uploads/${req.file.filename}` : ((req.body.tracking_image || '').trim().slice(0, 500));
+
+        db.prepare('UPDATE orders SET status = ?, tracking_number = ?, tracking_image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+            .run(status, tracking_number, tracking_image, id);
 
         res.json({ code: 0, message: '订单状态已更新', data: null });
     } catch (err) {
@@ -306,6 +309,8 @@ router.get('/orders', (req, res) => {
             const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(order.id);
             return {
                 ...order,
+                tracking_number: order.tracking_number || '',
+                tracking_image: order.tracking_image || '',
                 items: items.map(item => ({
                     ...item,
                     product_image: item.product_image ? JSON.parse(item.product_image) : []
@@ -386,6 +391,8 @@ router.get('/orders/export', (req, res) => {
                         '运费(元)': Number(item.shipping || 0).toFixed(2),
                         '小计(元)': itemSubtotal.toFixed(2),
                         '订单总金额(元)': i === 0 ? Number(order.total_amount || 0).toFixed(2) : '',
+                        '物流单号': i === 0 ? (order.tracking_number || '-') : '',
+                        '物流图片': i === 0 ? (order.tracking_image || '-') : '',
                         '支付截图': i === 0 ? (order.pay_screenshot || '-') : '',
                     });
                 }
@@ -412,6 +419,8 @@ router.get('/orders/export', (req, res) => {
             { wch: 10 }, // 运费
             { wch: 10 }, // 小计
             { wch: 14 }, // 订单总金额
+            { wch: 22 }, // 物流单号
+            { wch: 30 }, // 物流图片
             { wch: 20 }, // 支付截图
         ];
 

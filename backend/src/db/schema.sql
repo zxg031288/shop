@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS orders (
     pay_screenshot    TEXT    DEFAULT '',
     total_amount      REAL    NOT NULL DEFAULT 0,
     session_id    TEXT    DEFAULT '',
+    tracking_number TEXT  DEFAULT '',
+    tracking_image  TEXT  DEFAULT '',
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL

@@ -1,5 +1,11 @@
-feat: 商家后台支持修改登录密码
+feat: 订单发货支持填写物流单号或拍照上传物流图片
 
-- 后端新增 PUT /api/v1/admin/password 接口，验证旧密码后更新
-- 侧边栏用户区新增 🔑 按钮，点击弹出修改密码弹窗
-- 支持旧密码校验、新密码确认、新密码长度校验（至少6位）
+- DB: orders 表新增 tracking_number、tracking_image 字段
+- 后端 POST /orders/:id/ship 支持 multipart/form-data，上传物流图片
+- GET /orders 返回物流信息；Excel 导出新增物流列
+- 前端 API 改为 FormData 提交
+- 订单列表页「标记发货」按钮弹出填写物流信息弹窗：
+  - 输入框填物流单号
+  - 或拍照/选图片上传
+  - 二选一，至少填一项
+- 已发货订单展示物流单号和物流图片链接

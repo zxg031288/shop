@@ -23,6 +23,7 @@ export default function AdminOrderList() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('');
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [shipModal, setShipModal] = useState<{ orderId: number } | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -40,11 +41,26 @@ export default function AdminOrderList() {
     }
   };
 
-  const handleShip = async (id: number, currentStatus: string) => {
-    const nextStatus = currentStatus === 'paid' ? 'shipped' : 'done';
+  const handleShip = (id: number, currentStatus: string) => {
+    if (currentStatus === 'shipped') {
+      // shipped → done 不需要物流
+      doShip(id, 'done');
+    } else {
+      // paid → shipped 弹出填写物流信息
+      setShipModal({ orderId: id });
+    }
+  };
+
+  const doShip = async (
+    id: number,
+    status: 'shipped' | 'done',
+    tracking_number?: string,
+    tracking_image?: File | null,
+  ) => {
     try {
-      await adminShipOrder(id, nextStatus);
-      showToast(`已标记为${STATUS_LABEL[nextStatus]}`);
+      await adminShipOrder(id, status, tracking_number, tracking_image);
+      showToast(`已标记为${STATUS_LABEL[status]}`);
+      setShipModal(null);
       await fetchOrders();
     } catch (err: any) {
       showToast(err.message);
@@ -103,7 +119,6 @@ export default function AdminOrderList() {
   return (
     <div>
       <div className="admin-topbar">
-        <h1>订单管理</h1>
         <div className="admin-actions">
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
             共 {orders.length} 个订单
@@ -166,6 +181,21 @@ export default function AdminOrderList() {
                         </span>
                       )}
                     </div>
+                    {order.tracking_number && (
+                      <div style={{ marginTop: 3, fontSize: 11, color: '#4ade80' }}>
+                        📦 物流单号：{order.tracking_number}
+                      </div>
+                    )}
+                    {order.tracking_image && (
+                      <a
+                        href={order.tracking_image}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#4ade80', fontSize: 11, display: 'block', marginTop: 2 }}
+                      >
+                        📦 查看物流图片
+                      </a>
+                    )}
                     {order.pay_screenshot && (
                       <a
                         href={order.pay_screenshot}
@@ -233,6 +263,164 @@ export default function AdminOrderList() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 发货弹窗 */}
+      {shipModal && (
+        <ShipModal
+          orderId={shipModal.orderId}
+          onClose={() => setShipModal(null)}
+          onConfirm={(tracking_number, tracking_image) =>
+            doShip(shipModal.orderId, 'shipped', tracking_number, tracking_image)
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+function ShipModal({ orderId, onClose, onConfirm }: {
+  orderId: number;
+  onClose: () => void;
+  onConfirm: (tracking_number: string, tracking_image: File | null) => void;
+}) {
+  const [tracking_number, setTracking_number] = useState('');
+  const [tracking_image, setTracking_image] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setTracking_image(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // 至少填写一项
+    if (!tracking_number.trim() && !tracking_image) {
+      return;
+    }
+    onConfirm(tracking_number.trim(), tracking_image);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+    }}>
+      <div style={{
+        background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 16, padding: '28px 28px 24px', width: 400,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+      }}>
+        <h3 style={{ margin: '0 0 6px', color: '#fff', fontSize: 17 }}>📦 填写物流信息</h3>
+        <p style={{ margin: '0 0 20px', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+          订单 #{orderId} — 至少填写物流单号或上传一张物流图片
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          {/* 物流单号 */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6 }}>
+              物流单号
+            </label>
+            <input
+              type="text"
+              value={tracking_number}
+              onChange={e => setTracking_number(e.target.value)}
+              placeholder="请输入快递单号"
+              style={{
+                width: '100%', padding: '9px 12px',
+                border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                background: 'rgba(255,255,255,0.05)', color: '#fff',
+                fontSize: 14, boxSizing: 'border-box', outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* 分割线 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>或</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+
+          {/* 物流图片 */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 8 }}>
+              物流图片（快递单/物流截图）
+            </label>
+            <label style={{
+              display: 'block', cursor: 'pointer', borderRadius: 8,
+              border: '1.5px dashed rgba(255,255,255,0.15)',
+              overflow: 'hidden', position: 'relative',
+            }}>
+              {preview ? (
+                <img src={preview} alt="预览" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <div style={{
+                  height: 120, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', gap: 6,
+                  color: 'rgba(255,255,255,0.3)', fontSize: 13,
+                }}>
+                  <span style={{ fontSize: 28 }}>📷</span>
+                  点击上传图片
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+            </label>
+            {preview && (
+              <button
+                type="button"
+                onClick={() => { setTracking_image(null); setPreview(null); }}
+                style={{
+                  marginTop: 6, background: 'none', border: 'none',
+                  color: '#ef4444', fontSize: 12, cursor: 'pointer', padding: 0,
+                }}
+              >
+                移除图片
+              </button>
+            )}
+          </div>
+
+          {/* 操作按钮 */}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '9px 20px', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 8, background: 'transparent', color: 'rgba(255,255,255,0.5)',
+                cursor: 'pointer', fontSize: 14,
+              }}
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={!tracking_number.trim() && !tracking_image}
+              style={{
+                padding: '9px 20px', border: 'none', borderRadius: 8,
+                background: '#6c5ce7', color: '#fff', cursor: 'pointer', fontSize: 14,
+                opacity: (!tracking_number.trim() && !tracking_image) ? 0.45 : 1,
+                transition: 'opacity 0.2s',
+              }}
+            >
+              确认发货
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
