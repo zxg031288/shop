@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getProducts, getCategories, getHomeBanner, addCart } from '../api';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getProducts, getCategories, addCart } from '../api';
 import { useCart, useToast } from '../App';
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -13,71 +13,56 @@ const CATEGORY_ICONS: Record<string, string> = {
   '其他': '🎁',
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  '美妆护肤': '#fff0ee',
-  '包包': '#f0f7ff',
-  '鞋履': '#fffbf0',
-  '手表': '#fdf4ff',
-  '保健品': '#fff0f0',
-  '服饰': '#f0fff4',
-  '其他': '#f5f5f5',
-};
-
-export default function Home() {
+export default function Search() {
   const navigate = useNavigate();
-  const { cartCount, refreshCart } = useCart();
+  const { refreshCart } = useCart();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  const [keyword, setKeyword] = useState(searchParams.get('q') || '');
+  const [activeCategory, setActiveCategory] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [activeCategory, setActiveCategory] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<number | null>(null);
-  const [banner, setBanner] = useState({
-    titleLine1: '澳洲直邮',
-    titleLine2: '限时折扣',
-    subtitle: '今日下单享9折优惠',
-    badge: '立省 ¥80+',
-    emoji: '✈️',
-    linkUrl: '',
-  });
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getCategories().then(res => {
+      if (res.code === 0) setCategories(res.data || []);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await getHomeBanner();
-        if (res.code === 0 && res.data) {
-          setBanner((prev) => ({ ...prev, ...res.data }));
-        }
-      } catch {
-        /* 使用默认文案 */
-      }
-    })();
+    inputRef.current?.focus();
   }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await getProducts(activeCategory ? { category: activeCategory } : undefined);
+      const res = await getProducts({
+        ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
+        ...(activeCategory ? { category: activeCategory } : {}),
+      });
       if (res.code === 0) {
         setProducts(res.data || []);
       }
+    } catch {
+      showToast('搜索失败，请重试');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const res = await getCategories();
-      if (res.code === 0) {
-        setCategories(res.data || []);
-      }
-    } catch { /* ignore */ }
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    fetchProducts();
   };
 
   const handleAddCart = async (e: React.MouseEvent, productId: number) => {
@@ -109,32 +94,43 @@ export default function Home() {
         <span>● ● ▌</span>
       </div>
 
-      {/* 顶部导航 */}
+      {/* 顶部导航 + 搜索框 */}
       <div className="h5-top-nav">
-        <span className="h5-logo">月芽湾湾日本淘</span>
-        <div className="h5-search" onClick={() => navigate('/search')}>
+        <button
+          className="back-btn"
+          style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '0 4px' }}
+          onClick={() => navigate(-1)}
+        >
+          ←
+        </button>
+        <form className="h5-search" onSubmit={handleSearch} style={{ flex: 1 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
-          <span style={{ color: '#999', fontSize: 13 }}>搜索海外商品...</span>
-        </div>
-        <button className="h5-cart-btn" onClick={() => navigate('/cart')}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.8">
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <path d="M16 10a4 4 0 01-8 0"/>
-          </svg>
-          {cartCount > 0 && <div className="h5-cart-badge">{cartCount}</div>}
-        </button>
+          <input
+            ref={inputRef}
+            placeholder="搜索海外商品..."
+            value={keyword}
+            onChange={e => setKeyword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          />
+          <button
+            type="submit"
+            style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 14, cursor: 'pointer', padding: '0 4px' }}
+          >
+            搜索
+          </button>
+        </form>
+        <div style={{ width: 36 }} />
       </div>
 
-      {/* 分类导航 */}
-      <div className="h5-categories">
+      {/* 分类筛选 */}
+      <div className="h5-categories" style={{ padding: '10px 12px 4px' }}>
         <div
           className={`h5-cat-item ${activeCategory === '' ? 'active' : ''}`}
           onClick={() => setActiveCategory('')}
         >
-          <div className={`h5-cat-icon ${activeCategory === '' ? 'active' : ''}`} style={{ background: '#fff0ee' }}>🌟</div>
+          <div className={`h5-cat-icon ${activeCategory === '' ? 'active' : ''}`} style={{ background: '#fff0ee', width: 36, height: 36 }}>🌟</div>
           <span className="h5-cat-label">全部</span>
         </div>
         {categories.map(cat => (
@@ -145,7 +141,7 @@ export default function Home() {
           >
             <div
               className={`h5-cat-icon ${activeCategory === cat.id ? 'active' : ''}`}
-              style={{ background: CATEGORY_COLORS[cat.id] || '#f5f5f5' }}
+              style={{ background: 'var(--light)', width: 36, height: 36 }}
             >
               {CATEGORY_ICONS[cat.id] || '🎁'}
             </div>
@@ -154,49 +150,32 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Banner（文案由商家后台「首页活动」配置） */}
-      <div
-        className="h5-banner"
-        style={banner.linkUrl ? { cursor: 'pointer' } : undefined}
-        onClick={() => {
-          const u = (banner.linkUrl || '').trim();
-          if (u) window.open(u, '_blank', 'noopener,noreferrer');
-        }}
-        role={banner.linkUrl ? 'link' : undefined}
-      >
-        <div className="h5-banner-text">
-          <h3>
-            {banner.titleLine1}
-            <br />
-            {banner.titleLine2}
-          </h3>
-          <p>{banner.subtitle}</p>
-        </div>
-        <div>
-          <div className="h5-banner-tag">{banner.badge}</div>
-          <span className="h5-banner-emoji">{banner.emoji || '✈️'}</span>
-        </div>
-      </div>
-
-      {/* 区块标题 */}
-      <div className="h5-section-title">
-        <h2>🔥 热卖精选</h2>
-        <a href="#" onClick={e => e.preventDefault()}>查看更多</a>
-      </div>
-
       {/* 商品列表 */}
-      <div className="h5-product-scroll">
+      <div style={{ padding: '8px 12px 80px' }}>
+        <div style={{ color: '#888', fontSize: 12, marginBottom: 10 }}>
+          {loading ? '搜索中...' : `${products.length} 个结果`}
+          {keyword && !loading && <span>（关键词："{keyword}"）</span>}
+        </div>
+
         {loading ? (
           <div className="loading">
             <div className="loading-spinner" />
             加载中...
           </div>
         ) : products.length === 0 ? (
-          <div className="loading">暂无商品</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#aaa' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+            <div style={{ fontSize: 14 }}>没有找到相关商品</div>
+            <div style={{ fontSize: 12, marginTop: 6, color: '#ccc' }}>试试其他关键词或分类</div>
+          </div>
         ) : (
           <div className="h5-product-grid">
             {products.map(product => (
-              <div key={product.id} className="h5-product-card" onClick={() => navigate(`/product/${product.id}`)}>
+              <div
+                key={product.id}
+                className="h5-product-card"
+                onClick={() => navigate(`/product/${product.id}`)}
+              >
                 <div className="h5-product-img">
                   {renderProductImage(product)}
                 </div>
@@ -236,14 +215,14 @@ export default function Home() {
 
       {/* 底部导航 */}
       <div className="h5-bottom-nav">
-        <button className="h5-nav-item active" onClick={() => {}}>
+        <button className="h5-nav-item" onClick={() => navigate('/')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
           首页
         </button>
-        <button className="h5-nav-item" onClick={() => navigate('/search')}>
+        <button className="h5-nav-item active" onClick={() => {}}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
@@ -256,7 +235,6 @@ export default function Home() {
             <path d="M16 10a4 4 0 01-8 0"/>
           </svg>
           购物车
-          {cartCount > 0 && <div className="h5-cart-badge" style={{ position: 'relative', top: '-4px', left: '4px' }}>{cartCount}</div>}
         </button>
         <button className="h5-nav-item" onClick={() => navigate('/my')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

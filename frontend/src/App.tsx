@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { getCart, getCurrentUser } from './api';
 import Home from './pages/Home';
+import Search from './pages/Search';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
@@ -147,6 +148,7 @@ export default function App() {
             <Routes>
               {/* 买家端 */}
               <Route path="/" element={<Home />} />
+              <Route path="/search" element={<Search />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
