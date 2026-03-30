@@ -103,13 +103,8 @@ export default function Home() {
 
   return (
     <div className="h5-page">
-      {/* 状态栏 */}
-      <div className="h5-status-bar">
-        <span>9:41</span>
-        <span>● ● ▌</span>
-      </div>
-
-      {/* 顶部导航 */}
+      {/* 顶部状态栏留空 */}
+      <div className="h5-status-bar" />
       <div className="h5-top-nav">
         <span className="h5-logo">月芽湾湾日本淘</span>
         <div className="h5-search" onClick={() => navigate('/search')}>

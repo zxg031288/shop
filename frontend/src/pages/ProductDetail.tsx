@@ -80,11 +80,8 @@ export default function ProductDetail() {
 
   return (
     <div className="h5-page">
-      {/* 状态栏 */}
-      <div className="h5-status-bar">
-        <span>9:41</span>
-        <span>● ● ▌</span>
-      </div>
+      {/* 顶部状态栏留空 */}
+      <div className="h5-status-bar" />
 
       {/* 顶部导航 */}
       <div className="detail-header">

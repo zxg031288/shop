@@ -29,10 +29,7 @@ export default function MyPage({ onLogout }: Props) {
 
   return (
     <div className="h5-page">
-      <div className="h5-status-bar">
-        <span>9:41</span>
-        <span>● ● ▌</span>
-      </div>
+      <div className="h5-status-bar" />
 
       <div className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}>←</button>

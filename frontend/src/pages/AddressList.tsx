@@ -147,7 +147,7 @@ export default function AddressList() {
   if (showForm) {
     return (
       <div className="h5-page">
-        <div className="h5-status-bar"><span>9:41</span><span>● ● ▌</span></div>
+        <div className="h5-status-bar" />
         <div className="page-header">
           <button className="back-btn" onClick={() => setShowForm(false)}>←</button>
           <h2>{editingId ? '编辑地址' : '新增地址'}</h2>
@@ -276,7 +276,7 @@ export default function AddressList() {
 
   return (
     <div className="h5-page">
-      <div className="h5-status-bar"><span>9:41</span><span>● ● ▌</span></div>
+      <div className="h5-status-bar" />
       <div className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}>←</button>
         <h2>收货地址</h2>

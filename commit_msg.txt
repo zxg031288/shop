@@ -1,5 +1,3 @@
-fix: 修复搜索框和发现按钮无响应
+fix: 移除所有页面顶部状态栏的占位文字与符号
 
-- 顶部搜索栏改为可输入，点击跳转到 /search 页面
-- 「发现」底部导航按钮跳转到 /search 页面
-- 新增 Search.tsx：支持关键词搜索 + 分类筛选，商品卡片点击可跳转详情，加入购物车
+从 Home、Search、MyPage、ProductDetail、MyOrders、Cart、Checkout、OrderSuccess、AddressList 共 9 个页面中移除模拟手机状态栏的 "9:41" 左侧时间与 "● ● ▌" 右侧图标。

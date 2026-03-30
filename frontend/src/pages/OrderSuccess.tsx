@@ -19,10 +19,7 @@ export default function OrderSuccess() {
 
   return (
     <div className="h5-page">
-      <div className="h5-status-bar">
-        <span>9:41</span>
-        <span>● ● ▌</span>
-      </div>
+      <div className="h5-status-bar" />
 
       <div className="success-page">
         <div className="success-circle">✓</div>
