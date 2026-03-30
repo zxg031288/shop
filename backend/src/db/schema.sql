@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS admins (
 
 -- 初始化默认管理员 (密码: admin123)
 INSERT OR IGNORE INTO admins (username, password, nickname)
-VALUES ('admin', 'admin123', '张老板');
+VALUES ('admin', 'admin123', '老板');
 
 -- 插入示例商品数据
 INSERT OR IGNORE INTO products (name, category, price, stock, shipping, origin, description, images, status)
