@@ -507,4 +507,43 @@ router.get('/stats', (req, res) => {
     }
 });
 
+// PUT /api/v1/admin/password - 修改登录密码
+router.put('/password', (req, res) => {
+    try {
+        const db = getDB();
+        const { oldPassword, newPassword } = req.body;
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ code: 400, message: '请填写旧密码和新密码', data: null });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ code: 400, message: '新密码长度不能少于6位', data: null });
+        }
+
+        // 用用户名（旧密码）找到记录
+        // 从请求体取 username（登录时已验证，这里信任前端传来的 username）
+        const { username } = req.body;
+        if (!username) {
+            return res.status(400).json({ code: 400, message: '用户名不能为空', data: null });
+        }
+
+        const admin = db.prepare('SELECT * FROM admins WHERE username = ?').get(username);
+        if (!admin) {
+            return res.status(404).json({ code: 404, message: '管理员不存在', data: null });
+        }
+
+        if (admin.password !== oldPassword) {
+            return res.status(403).json({ code: 403, message: '旧密码不正确', data: null });
+        }
+
+        db.prepare('UPDATE admins SET password = ? WHERE username = ?').run(newPassword, username);
+
+        res.json({ code: 0, message: '密码修改成功', data: null });
+    } catch (err) {
+        console.error('[Admin] Change password error:', err);
+        res.status(500).json({ code: 500, message: '服务器错误', data: null });
+    }
+});
+
 module.exports = router;
