@@ -176,7 +176,12 @@ export default function Home() {
       {/* 区块标题 */}
       <div className="h5-section-title">
         <h2>🔥 热卖精选</h2>
-        <a href="#" onClick={e => e.preventDefault()}>查看更多</a>
+        <button
+          style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}
+          onClick={() => navigate('/search')}
+        >
+          查看更多 →
+        </button>
       </div>
 
       {/* 商品列表 */}
